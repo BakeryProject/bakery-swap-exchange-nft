@@ -74,6 +74,7 @@ contract ExchangeNFTs is IExchangeNFTs, ERC721HolderUpgradeable, OwnableUpgradea
 
     function setConfig(address _config) public onlyOwner {
         require(address(config) != _config, 'forbidden');
+        emit SetConfig(_msgSender(), address(config), _config);
         config = IExchangeNFTConfiguration(_config);
     }
 
@@ -102,7 +103,8 @@ contract ExchangeNFTs is IExchangeNFTs, ERC721HolderUpgradeable, OwnableUpgradea
         require(
             _nftTokens.length == _tokenIds.length &&
                 _tokenIds.length == _quoteTokens.length &&
-                _quoteTokens.length == _prices.length,
+                _quoteTokens.length == _prices.length &&
+                _prices.length == _selleStatus.length,
             'length err'
         );
         for (uint256 i = 0; i < _nftTokens.length; i++) {
@@ -333,7 +335,7 @@ contract ExchangeNFTs is IExchangeNFTs, ERC721HolderUpgradeable, OwnableUpgradea
                 tokenId: _tokenId,
                 originPrice: price,
                 price: _price,
-                isMaker: false
+                isMaker: _quoteToken == ExchangeNFTsHelper.ETH_ADDRESS
             })
         );
     }
@@ -346,7 +348,6 @@ contract ExchangeNFTs is IExchangeNFTs, ERC721HolderUpgradeable, OwnableUpgradea
     }
 
     function cancelSellToken(address _nftToken, uint256 _tokenId) public override nonReentrant {
-        config.whenSettings(3, 0);
         require(tokenSellers[_nftToken][_tokenId] == _msgSender(), 'Only Seller can cancel sell token');
         IERC721Upgradeable(_nftToken).safeTransferFrom(address(this), _msgSender(), _tokenId);
         _userSellingTokens[_nftToken][tokenSelleOn[_nftToken][_tokenId]][_msgSender()].remove(_tokenId);
@@ -666,7 +667,6 @@ contract ExchangeNFTs is IExchangeNFTs, ERC721HolderUpgradeable, OwnableUpgradea
         address _quoteToken,
         uint256 _tokenId
     ) public override nonReentrant {
-        config.whenSettings(7, 0);
         require(_userBids[_nftToken][_quoteToken][_msgSender()].contains(_tokenId), 'Only Bidder can cancel the bid');
         // find  bid and the index
         (BidEntry memory bidEntry, uint256 _index) =

@@ -3,6 +3,7 @@
 pragma solidity >=0.7.0;
 
 interface IExchangeNFTs {
+    event SetConfig(address opterator, address oldConfig, address newConfig);
     event Ask(
         address indexed nftToken,
         address seller,
